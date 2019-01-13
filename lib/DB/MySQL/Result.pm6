@@ -1,0 +1,79 @@
+use NativeCall;
+use DB::MySQL::Converter;
+use DB::MySQL::Native;
+use DB::Result;
+
+role DB::MySQL::Result does DB::Result
+{
+    has $.result;
+    has $.num-fields = $!result.num-fields;
+    has $.fields = $!result.fetch-fields;
+
+    method free() { .free with $!result; $!result = Nil }
+
+    method names() { do for ^$!num-fields { $!fields[$_].name } }
+
+}
+
+class DB::MySQL::NonStatementResult does DB::MySQL::Result
+{
+    has $.db;
+
+    method finish() { $.free; .finish with $!db }  # free db instead of sth
+
+    method row()
+    {
+        my $row = $!result.fetch-row // return ();
+        my $lengths = $!result.fetch-lengths;
+
+        do for ^$!num-fields -> $i
+        {
+            my $val = DB::MySQL::Converter.value(
+                $!fields[$i].type, $row[$i], $lengths[$i]);
+        }
+    }
+}
+
+class DB::MySQL::StatementResult does DB::MySQL::Result
+{
+    has MYSQL_STMT $.stmt;
+    has DB::MySQL::Native::ResultsBind $.result-bind;
+
+    method free()
+    {
+        .free with $!result-bind;
+        .free with $!result;
+        $!result-bind = Nil;
+        $!result = Nil;
+    }
+
+    submethod TWEAK()
+    {
+        $!result-bind = DB::MySQL::Native::ResultsBind.new(:count($!num-fields));
+
+
+        for ^$!num-fields -> $i
+        {
+            DB::MySQL::Converter.make-buffer($!result-bind[$i], $!fields[$i])
+        }
+
+        die DB::MySQL::Error.new(message => $!stmt.error)
+            if $!stmt.bind-result($!result-bind[0]);
+    }
+
+    method row(Bool :$hash)
+    {
+        given $!stmt.fetch
+        {
+            when 1 { die DB::MySQL::Error.new(message => $!stmt.error) }
+            when MYSQL_NO_DATA { return () }
+            when MYSQL_DATA_TRUNCATED { die "truncated" }
+        }
+
+        do for ^$!num-fields -> $i
+        {
+            DB::MySQL::Converter.bind-value(mysql-field-type($!fields[$i].type),
+                                            $!result-bind[$i])
+        }
+    }
+}
