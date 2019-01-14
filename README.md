@@ -32,3 +32,13 @@ say $mysql.query('select * from foo where x = ?', 1).array;
 say $mysql.query('select * from foo where x = ?', 1).hash;
 ```
 
+Execute a query returning a bunch of rows as arrays or hashes:
+
+```perl6
+.say for $mysql.query('select * from foo').arrays;
+.say for $mysql.query('select * from foo').hashes;
+```
+
+`.query()` caches a prepared statement, and can have placeholders and
+arguments - `.execute()` does not prepare/cache and can't have
+placeholders.  Both can return results.

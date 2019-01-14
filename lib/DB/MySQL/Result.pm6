@@ -51,21 +51,19 @@ class DB::MySQL::StatementResult does DB::MySQL::Result
     {
         $!result-bind = DB::MySQL::Native::ResultsBind.new(:count($!num-fields));
 
-
         for ^$!num-fields -> $i
         {
             DB::MySQL::Converter.make-buffer($!result-bind[$i], $!fields[$i])
         }
 
-        die DB::MySQL::Error.new(message => $!stmt.error)
-            if $!stmt.bind-result($!result-bind[0]);
+        $!stmt.check if $!stmt.bind-result($!result-bind[0]);
     }
 
     method row(Bool :$hash)
     {
         given $!stmt.fetch
         {
-            when 1 { die DB::MySQL::Error.new(message => $!stmt.error) }
+            when 1 { $!stmt.check }
             when MYSQL_NO_DATA { return () }
             when MYSQL_DATA_TRUNCATED { die "truncated" }
         }

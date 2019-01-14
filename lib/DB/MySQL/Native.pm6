@@ -261,8 +261,17 @@ class DB::MySQL::Native::ResultsBind does DB::MySQL::Native::Bind
 
 class MYSQL_STMT is repr('CPointer')
 {
+    method errno(--> uint32)
+        is native(LIBMYSQL) is symbol('mysql_stmt_errno') {}
+
     method error(--> Str)
         is native(LIBMYSQL) is symbol('mysql_stmt_error') {}
+
+    method check(int32 $code = $.errno) is hidden-from-backtrace
+    {
+        die DB::MySQL::Error.new(:$code, message => $.error) unless $code == 0;
+        self
+    }
 
     method mysql_stmt_prepare(Blob, ulong --> int32)
         is native(LIBMYSQL) {}
@@ -312,6 +321,9 @@ class MYSQL_STMT is repr('CPointer')
 
     method fetch(--> int32)
         is native(LIBMYSQL) is symbol('mysql_stmt_fetch') {}
+
+    method close(--> int32)
+        is native(LIBMYSQL) is symbol('mysql_stmt_close') {}
 }
 
 class MYSQL_FIELD is repr('CStruct') does Positional
@@ -417,7 +429,7 @@ class DB::MySQL::Native is repr('CPointer')
         my CArray[uint32] $arg .= new($i);
         $.check($.mysql_options($option, $arg))
     }
-    
+
     method errno(--> int32)
         is native(LIBMYSQL) is symbol('mysql_errno') {}
 

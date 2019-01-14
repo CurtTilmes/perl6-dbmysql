@@ -17,6 +17,14 @@ class DB::MySQL::Statement does DB::Statement
         }
     }
 
+    method free(--> Nil)
+    {
+        $!params.free;
+        $!params = Nil;
+        $!stmt.close;
+        $!stmt = Nil;
+    }
+
     method execute(**@args, Bool :$finish)
     {
         die DB::MySQL::Error.new(message => 'Wrong number of params')
@@ -26,12 +34,10 @@ class DB::MySQL::Statement does DB::Statement
         {
             $!params.bind-params(@args);
 
-            die DB::MySQL::Error.new(message => $!stmt.error)
-                if $!stmt.bind-param($!params[0]);
+            $!stmt.check($!stmt.bind-param($!params[0]))
         }
 
-        die DB::MySQL::Error.new(message => $!stmt.error)
-            if $!stmt.execute || $!stmt.store-result;
+        $!stmt.check if $!stmt.execute || $!stmt.store-result;
 
         my $result = $!stmt.result-metadata // return $!stmt.affected-rows;
 
