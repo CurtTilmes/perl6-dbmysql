@@ -3,6 +3,7 @@ use Test::When <extended>;
 
 use DB::MySQL::Native;
 
-say DB::MySQL::Native.client-version;
+ok DB::MySQL::Native.client-version, 'client-version';
 
-say DB::MySQL::Native.client-info;
+ok DB::MySQL::Native.client-info, 'client-info';
+

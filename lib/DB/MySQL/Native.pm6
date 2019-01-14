@@ -17,6 +17,27 @@ class DB::MySQL::Error is Exception
 
 sub out-of-memory() { die DB::MySQL::Error.new(message => 'Out of Memory') }
 
+enum mysql-option <MYSQL_OPT_CONNECT_TIMEOUT MYSQL_OPT_COMPRESS
+    MYSQL_OPT_NAMED_PIPE MYSQL_INIT_COMMAND MYSQL_READ_DEFAULT_FILE
+    MYSQL_READ_DEFAULT_GROUP MYSQL_SET_CHARSET_DIR
+    MYSQL_SET_CHARSET_NAME MYSQL_OPT_LOCAL_INFILE MYSQL_OPT_PROTOCOL
+    MYSQL_SHARED_MEMORY_BASE_NAME MYSQL_OPT_READ_TIMEOUT
+    MYSQL_OPT_WRITE_TIMEOUT MYSQL_OPT_USE_RESULT
+    MYSQL_OPT_USE_REMOTE_CONNECTION MYSQL_OPT_USE_EMBEDDED_CONNECTION
+    MYSQL_OPT_GUESS_CONNECTION MYSQL_SET_CLIENT_IP MYSQL_SECURE_AUTH
+    MYSQL_REPORT_DATA_TRUNCATION MYSQL_OPT_RECONNECT
+    MYSQL_OPT_SSL_VERIFY_SERVER_CERT MYSQL_PLUGIN_DIR
+    MYSQL_DEFAULT_AUTH MYSQL_OPT_BIND MYSQL_OPT_SSL_KEY
+    MYSQL_OPT_SSL_CERT MYSQL_OPT_SSL_CA MYSQL_OPT_SSL_CAPATH
+    MYSQL_OPT_SSL_CIPHER MYSQL_OPT_SSL_CRL MYSQL_OPT_SSL_CRLPATH
+    MYSQL_OPT_CONNECT_ATTR_RESET MYSQL_OPT_CONNECT_ATTR_ADD
+    MYSQL_OPT_CONNECT_ATTR_DELETE MYSQL_SERVER_PUBLIC_KEY
+    MYSQL_ENABLE_CLEARTEXT_PLUGIN
+    MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS MYSQL_OPT_SSL_ENFORCE
+    MYSQL_OPT_MAX_ALLOWED_PACKET MYSQL_OPT_NET_BUFFER_LENGTH
+    MYSQL_OPT_TLS_VERSION MYSQL_OPT_SSL_MODE
+    MYSQL_OPT_GET_SERVER_PUBLIC_KEY>;
+
 enum mysql-field-type
 (
     MYSQL_TYPE_DECIMAL     => 0,
@@ -383,6 +404,20 @@ class DB::MySQL::Native is repr('CPointer')
     method init(DB::MySQL::Native:U: --> DB::MySQL::Native)
         is native(LIBMYSQL) is symbol('mysql_init') {}
 
+    method mysql_options(int32 $option, Blob $arg --> int32)
+        is native(LIBMYSQL) is symbol('mysql_options') {}
+
+    multi method option(mysql-option $option, Str:D $arg)
+    {
+        $.check($.mysql_options($option, $arg.encode))
+    }
+
+    multi method option(mysql-option $option, Int:D $i)
+    {
+        my CArray[uint32] $arg .= new($i);
+        $.check($.mysql_options($option, $arg))
+    }
+    
     method errno(--> int32)
         is native(LIBMYSQL) is symbol('mysql_errno') {}
 
@@ -390,16 +425,16 @@ class DB::MySQL::Native is repr('CPointer')
         is native(LIBMYSQL) is symbol('mysql_error') {}
 
     method connect(Str $host, Str $user, Str $passwd, Str $db,
-                              uint32 $port, Str $unix-socket, ulong $client-flag
-                              --> DB::MySQL::Native)
+                   uint32 $port, Str $unix-socket, ulong $client-flag
+                   --> DB::MySQL::Native)
         is native(LIBMYSQL) is symbol('mysql_real_connect') {}
 
     method close()
         is native(LIBMYSQL) is symbol('mysql_close') {}
 
-    method check(int32 $code = $.errno)
+    method check(int32 $code = $.errno) is hidden-from-backtrace
     {
-        die DB::MySQL::Error.new(message => $.error) unless $code == 0;
+        die DB::MySQL::Error.new(:$code, message => $.error) unless $code == 0;
         self
     }
 

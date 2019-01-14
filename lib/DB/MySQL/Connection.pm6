@@ -1,8 +1,8 @@
-use DB::Database;
+use DB::Connection;
 use DB::MySQL::Native;
 use DB::MySQL::Statement;
 
-class DB::MySQL::Database does DB::Database
+class DB::MySQL::Connection does DB::Connection
 {
     has DB::MySQL::Native $.conn handles <client-version client-info host-info
                                           server-info server-version
@@ -11,14 +11,10 @@ class DB::MySQL::Database does DB::Database
 
     method ping(--> Bool) { $!conn.ping == 0 }
 
-    method execute(Str:D $command, Bool :$finish)
+    method free(--> Nil)
     {
-        $!conn.query($command);
-
-        my $result = $!conn.check.store-result
-                     // return $!conn.check.affected-rows;
-
-        DB::MySQL::NonStatementResult.new(:db(self), :$result, :$finish);
+        .close with $!conn;
+        $!conn = Nil;
     }
 
     method prepare-nocache(Str:D $query --> DB::MySQL::Statement)
@@ -28,9 +24,13 @@ class DB::MySQL::Database does DB::Database
         DB::MySQL::Statement.new(:db(self), :$stmt)
     }
 
-    submethod DESTROY(--> Nil)
+    method execute(Str:D $command, Bool :$finish)
     {
-        .close with $!conn;
-        $!conn = Nil;
+        $!conn.query($command);
+
+        my $result = $!conn.check.store-result
+                     // return $!conn.check.affected-rows;
+
+        DB::MySQL::NonStatementResult.new(:db(self), :$result, :$finish);
     }
 }
