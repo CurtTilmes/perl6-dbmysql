@@ -33,7 +33,6 @@ class DB::MySQL::Statement does DB::Statement
         if $!param-count
         {
             $!params.bind-params(@args);
-
             $!stmt.check($!stmt.bind-param($!params[0]))
         }
 
