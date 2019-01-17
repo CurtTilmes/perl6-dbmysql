@@ -35,7 +35,7 @@ class DB::MySQL::NonStatementResult does DB::MySQL::Result
 
 class DB::MySQL::StatementResult does DB::MySQL::Result
 {
-    has MYSQL_STMT $.stmt;
+    has MYSQL_STMT $.stmt is required;
     has DB::MySQL::Native::ResultsBind $.result-bind;
 
     method free()
