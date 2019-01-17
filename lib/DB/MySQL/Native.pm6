@@ -1,13 +1,9 @@
+use JSON::Fast;
 use NativeCall;
 
 my constant LIBMYSQL = 'mysqlclient';
 
 my constant NULL = Pointer;
-
-sub my_init()
-    is native(LIBMYSQL) {}
-
-INIT my_init;
 
 class DB::MySQL::Error is Exception
 {
@@ -38,7 +34,7 @@ enum mysql-option <MYSQL_OPT_CONNECT_TIMEOUT MYSQL_OPT_COMPRESS
     MYSQL_OPT_TLS_VERSION MYSQL_OPT_SSL_MODE
     MYSQL_OPT_GET_SERVER_PUBLIC_KEY>;
 
-enum mysql-field-type
+enum mysql-type
 (
     MYSQL_TYPE_DECIMAL     => 0,
     MYSQL_TYPE_TINY        => 1,
@@ -154,9 +150,9 @@ role DB::MySQL::Native::Bind does Positional
 
     method bindfree()
     {
-        for ^$!count
+        for ^$!count -> $i
         {
-            with self[$_]
+            with self[$i]
             {
                 free(Pointer.new(.buffer)) if .buffer_length
             }
@@ -177,7 +173,7 @@ class DB::MySQL::Native::ParamsBind does DB::MySQL::Native::Bind
 {
     method bind-params(@args)
     {
-        for ^$!count -> $i
+        for ^@args.elems -> $i
         {
             $.bind($i, @args[$i])
         }
@@ -207,9 +203,35 @@ class DB::MySQL::Native::ParamsBind does DB::MySQL::Native::Bind
         }
     }
 
+    multi method bind(Int:D $i, Bool:D $b)
+    {
+        $.bind($i, Blob[int8].new($b ?? 1 !! 0), MYSQL_TYPE_TINY)
+    }
+
     multi method bind(Int:D $i, Int:D $n)
     {
         $.bind($i, Blob[int64].new($n), MYSQL_TYPE_LONGLONG)
+    }
+
+    multi method bind(Int:D $i, DateTime:D $dt)
+    {
+        # Remove timezone per DBIish
+        $.bind($i, $dt.local.Str.subst(/ <[\-\+]>\d\d ':' \d\d /,'').encode)
+    }
+
+    multi method bind(Int:D $i, Map:D $m)
+    {
+        $.bind($i, to-json($m))
+    }
+
+    multi method bind(Int:D $i, @a)
+    {
+        $.bind($i, to-json(@a))
+    }
+
+    multi method bind(Int:D $i, Set:D $s)
+    {
+        $.bind($i, $s.keys.join(','))
     }
 
     multi method bind(Int:D $i, Str:D() $s)

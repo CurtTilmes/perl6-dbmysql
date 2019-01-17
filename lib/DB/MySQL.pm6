@@ -13,10 +13,11 @@ class DB::MySQL does DB
     has Int $.flags = 0;
     has Str $.group = 'client';
     has Int $.connect-timeout;
+    has Lock $.lock .= new;       # Just because I'm paranoid, should I remove?
 
     method connect(--> DB::MySQL::Connection)
     {
-        my $conn = DB::MySQL::Native.init;
+        my $conn = $!lock.protect: { DB::MySQL::Native.init }
 
         $conn.option(MYSQL_READ_DEFAULT_GROUP, $_) with $!group;
 
@@ -28,4 +29,3 @@ class DB::MySQL does DB
         DB::MySQL::Connection.new(:owner(self), :$conn)
     }
 }
-

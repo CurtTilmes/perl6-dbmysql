@@ -7,5 +7,4 @@ Put this in ~/.my.cnf:
 protocol=tcp
 user=perltest
 password=testpass
-[perltest]
 database=perltest

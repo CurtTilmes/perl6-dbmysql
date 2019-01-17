@@ -70,9 +70,7 @@ sub mysql-value-JSON(Pointer $bufptr, Int $length)
     from-json(mysql-value-Str($bufptr, $length))
 }
 
-
-
-my %types =
+my %types = Map.new: map( { +mysql-type::{.key} => .value },
 (
     MYSQL_TYPE_DECIMAL =>
     %(
@@ -214,14 +212,14 @@ my %types =
         binvalue => &mysql-value-Str,
         strvalue => &mysql-value-Str
     ),
-);
+));
 
 class DB::MySQL::Converter
 {
     method value($type, $bufptr, $len)
     {
-        with %types{mysql-field-type($type)} //
-             %types{MYSQL_TYPE_STRING}
+        with %types{$type} //
+             %types{+mysql-type::{MYSQL_TYPE_STRING}}
         {
             .<strvalue>($bufptr, $len)
         }
@@ -230,7 +228,7 @@ class DB::MySQL::Converter
     method bind-value($type, MYSQL_BIND $bind)
     {
         with %types{$type} //
-             %types{MYSQL_TYPE_STRING}
+             %types{+mysql-type::{MYSQL_TYPE_STRING}}
         {
             .<binvalue>($bind.bufptr, $bind.len)
         }
@@ -238,8 +236,8 @@ class DB::MySQL::Converter
 
     method make-buffer(MYSQL_BIND $bind, MYSQL_FIELD $field)
     {
-        with %types{mysql-field-type($field.type)} //
-             %types{MYSQL_TYPE_STRING}
+        with %types{$field.type} //
+             %types{+mysql-type::{MYSQL_TYPE_STRING}}
         {
             $bind.buffer_type = .<buftype>;
             $bind.buffer_length = .<bufsize> || $field.length;

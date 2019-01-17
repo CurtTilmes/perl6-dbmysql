@@ -5,8 +5,8 @@ use DB::MySQL::Converter;
 
 class DB::MySQL::Statement does DB::Statement
 {
-    has MYSQL_STMT $.stmt;
-    has Int $.param-count = 0;
+    has MYSQL_STMT $.stmt is required;
+    has Int $.param-count;
     has DB::MySQL::Native::ParamsBind $.params;
 
     submethod BUILD(:$!db, :$!stmt)
@@ -19,9 +19,9 @@ class DB::MySQL::Statement does DB::Statement
 
     method free(--> Nil)
     {
-        $!params.free;
+        .free with $!params;
         $!params = Nil;
-        $!stmt.close;
+        .close with $!stmt;
         $!stmt = Nil;
     }
 

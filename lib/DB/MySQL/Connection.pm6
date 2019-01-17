@@ -4,10 +4,10 @@ use DB::MySQL::Statement;
 
 class DB::MySQL::Connection does DB::Connection
 {
-    has DB::MySQL::Native $.conn handles <client-version client-info host-info
-                                          server-info server-version
-                                          proto-info ssl-cipher select-db
-                                          stat info check insert-id>;
+    has DB::MySQL::Native $.conn is required
+        handles <client-version client-info host-info server-info
+                 server-version proto-info ssl-cipher select-db stat
+                 info check insert-id>;
 
     method ping(--> Bool) { $!conn.ping == 0 }
 

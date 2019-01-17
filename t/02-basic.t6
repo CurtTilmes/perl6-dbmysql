@@ -3,11 +3,13 @@ use Test::When <extended>;
 
 use DB::MySQL;
 
-#plan 10;
+plan 12;
 
 isa-ok my $mysql = DB::MySQL.new(), DB::MySQL, 'Create object';
 
 is $mysql.execute('select 42').value, 42, 'Simple query';
+
+is $mysql.query('select ?', 17).value, 17, 'query with placeholder';
 
 is $mysql.execute('create table foo (x int, y varchar(80))'),
     0, 'Create table';
@@ -31,3 +33,7 @@ is-deeply $mysql.execute('select * from foo order by x').hashes,
     ( %(x => 1, y => 'this'), %(x => 2, y => 'that') ), 'select hashes';
 
 is $mysql.execute('drop table foo'), 0, 'Drop table';
+
+lives-ok { $mysql.finish }, 'finish';
+
+done-testing;

@@ -5,7 +5,7 @@ use DB::Result;
 
 role DB::MySQL::Result does DB::Result
 {
-    has $.result;
+    has MYSQL_RES $.result is required;
     has $.num-fields = $!result.num-fields;
     has $.fields = $!result.fetch-fields;
 
@@ -17,7 +17,7 @@ role DB::MySQL::Result does DB::Result
 
 class DB::MySQL::NonStatementResult does DB::MySQL::Result
 {
-    has $.db;
+    has $.db is required;
 
     method finish() { $.free; .finish with $!db }  # free db instead of sth
 
@@ -61,17 +61,22 @@ class DB::MySQL::StatementResult does DB::MySQL::Result
 
     method row(Bool :$hash)
     {
-        given $!stmt.fetch
+        if (my $res = $!stmt.fetch) == 0
         {
-            when 1 { $!stmt.check }
-            when MYSQL_NO_DATA { return () }
-            when MYSQL_DATA_TRUNCATED { die "truncated" }
+            do for ^$!num-fields -> $i
+            {
+                DB::MySQL::Converter.bind-value($!fields[$i].type,
+                                                $!result-bind[$i])
+            }
         }
-
-        do for ^$!num-fields -> $i
+        else
         {
-            DB::MySQL::Converter.bind-value(mysql-field-type($!fields[$i].type),
-                                            $!result-bind[$i])
+            given $res
+            {
+                when 1 { $!stmt.check }
+                when MYSQL_NO_DATA { return () }
+                when MYSQL_DATA_TRUNCATED { die "truncated" }
+            }
         }
     }
 }
