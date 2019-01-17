@@ -1,7 +1,7 @@
 DB::MySQL - MySQL access for Perl 6
 ===================================
 
-This is a reimplementation of Perl 6 bindigns for MySQL.
+This is a reimplementation of Perl 6 bindings for MySQL.
 
 Basic usage
 -----------
