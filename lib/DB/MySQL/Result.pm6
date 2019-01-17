@@ -1,4 +1,3 @@
-use NativeCall;
 use DB::MySQL::Converter;
 use DB::MySQL::Native;
 use DB::Result;

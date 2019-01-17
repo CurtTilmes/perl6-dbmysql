@@ -20,16 +20,19 @@ class DB::MySQL::Connection does DB::Connection
     method prepare-nocache(Str:D $query --> DB::MySQL::Statement)
     {
         my $stmt = $!conn.stmt-init // $!conn.check;
-        $stmt.prepare($query);
+
+        my $buf = $query.encode;
+        $stmt.prepare($buf, $buf.bytes) || $stmt.check;
+
         DB::MySQL::Statement.new(:db(self), :$stmt)
     }
 
-    method execute(Str:D $command, Bool :$finish)
+    method execute(Str:D $command, Bool :$finish, Bool :$store = True)
     {
-        $!conn.query($command);
+        $!conn.query($command) && $!conn.check;
 
-        my $result = $!conn.check.store-result
-                     // return $!conn.check.affected-rows;
+        my $result = ($store ?? $!conn.store-result !! $!conn.use-result)
+            // return $!conn.check.affected-rows;
 
         DB::MySQL::NonStatementResult.new(:db(self), :$result, :$finish);
     }

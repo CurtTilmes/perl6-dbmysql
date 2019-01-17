@@ -7,6 +7,7 @@ Basic usage
 -----------
 
 ```perl6
+use DB::MySQL;
 my $mysql = DB::MySQL.new();  # You can pass in various options
 ```
 
@@ -42,3 +43,23 @@ Execute a query returning a bunch of rows as arrays or hashes:
 `.query()` caches a prepared statement, and can have placeholders and
 arguments - `.execute()` does not prepare/cache and can't have
 placeholders.  Both can return results.
+
+Installation
+------------
+
+This module relies on `libmysqlclient.so`.  For Ubuntu, I install this
+with:
+
+```
+sudo apt install libmysqlclient-dev
+```
+
+I worked with version 5.7 of the API.  It may or may not work with
+other versions.  You can see the client version with:
+
+```
+perl6 -MDB::MySQL::Native -e 'say mysql_get_client_info'
+```
+
+There are likely 64-bit Linux dependencies in the code.  Patches
+welcome if someone wants to make it on other OSes.

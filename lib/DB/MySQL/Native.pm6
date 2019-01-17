@@ -3,7 +3,8 @@ use NativeCall;
 
 my constant LIBMYSQL = 'mysqlclient';
 
-my constant NULL = Pointer;
+sub mysql_get_client_version(--> uint32) is export is native(LIBMYSQL) {}
+sub mysql_get_client_info(--> Str) is export is native(LIBMYSQL) {}
 
 class DB::MySQL::Error is Exception
 {
@@ -62,15 +63,8 @@ enum mysql-type
     MYSQL_TYPE_LONG_BLOB   => 251,
     MYSQL_TYPE_BLOB        => 252,
     MYSQL_TYPE_VAR_STRING  => 253,
-    MYSQL_TYPE_STRING      => 254,
-    MYSQL_TYPE_GEOMETRY    => 255
+    MYSQL_TYPE_STRING      => 254
 );
-
-enum mysql-stmt-attr-type <
-    STMT_ATTR_UPDATE_MAX_LENGTH
-    STMT_ATTR_CURSOR_TYPE
-    STMT_ATTR_PREFETCH_ROWS
->;
 
 enum mysql-fetch-returns (
     MYSQL_NO_DATA => 100,
@@ -81,8 +75,6 @@ my constant my_bool = int8;
 
 constant ptrsize is export = nativesizeof(Pointer);
 constant intptr is export = ptrsize == 8 ?? uint64 !! uint32;
-
-sub ptr($p) { nativecast(Pointer, $p) }
 
 sub malloc(size_t --> Pointer) is native {}
 sub realloc(Pointer, size_t --> Pointer) is native {}
@@ -154,7 +146,7 @@ role DB::MySQL::Native::Bind does Positional
         {
             with self[$i]
             {
-                free(Pointer.new(.buffer)) if .buffer_length
+                free(.bufptr) if .buffer_length && .bufptr;
             }
         }
         free($_) with $!binds;
@@ -173,7 +165,8 @@ class DB::MySQL::Native::ParamsBind does DB::MySQL::Native::Bind
 {
     method bind-params(@args)
     {
-        for ^@args.elems -> $i
+        my \n = @args.elems;
+        loop (my $i = 0; $i < n; $i++)
         {
             $.bind($i, @args[$i])
         }
@@ -295,23 +288,14 @@ class MYSQL_STMT is repr('CPointer')
         self
     }
 
-    method mysql_stmt_prepare(Blob, ulong --> int32)
-        is native(LIBMYSQL) {}
+    method prepare(Blob, ulong --> int32)
+        is native(LIBMYSQL) is symbol('mysql_stmt_prepare') {}
 
     method param-count(--> ulong)
         is native(LIBMYSQL) is symbol('mysql_stmt_param_count') {}
 
     method field-count(--> uint32)
         is native(LIBMYSQL) is symbol('mysql_stmt_field_count') {}
-
-    method prepare(Str $str)
-    {
-        my $buf = $str.encode;
-        if $.mysql_stmt_prepare($buf, $buf.bytes) != 0
-        {
-            die DB::MySQL::Error.new(message => $.error)
-        }
-    }
 
     method bind-param(MYSQL_BIND --> my_bool)
         is native(LIBMYSQL) is symbol('mysql_stmt_bind_param') {}
@@ -327,16 +311,6 @@ class MYSQL_STMT is repr('CPointer')
 
     method store-result(--> MYSQL_RES)
         is native(LIBMYSQL) is symbol('mysql_store_result') {}
-
-    method attr-set(uint32 $option, Pointer $arg --> my_bool)
-        is native(LIBMYSQL) is symbol('mysql_stmt_attr_set') {}
-
-    method update-max-length()
-    {
-        my CArray[my_bool] $arg .= new(1);
-        die DB::MySQL::Error.new(message => $.error)
-            if $.attr-set(STMT_ATTR_UPDATE_MAX_LENGTH, ptr($arg))
-    }
 
     method affected-rows(--> uint64)
         is native(LIBMYSQL) is symbol('mysql_stmt_affected_rows') {}
@@ -403,10 +377,6 @@ class MYSQL_RES
     method free()
         is native(LIBMYSQL) is symbol('mysql_free_result') {}
 }
-
-sub mysql_get_client_version(--> uint32) is native(LIBMYSQL) {}
-
-sub mysql_get_client_info(--> Str) is native(LIBMYSQL) {}
 
 class DB::MySQL::Native is repr('CPointer')
 {
@@ -475,29 +445,17 @@ class DB::MySQL::Native is repr('CPointer')
     method ping(--> int32)
         is native(LIBMYSQL) is symbol('mysql_ping') {}
 
-    method mysql_select_db(Str $db --> int32)
-        is native(LIBMYSQL) {}
-
-    method select-db(Str $db) { $.check($.mysql_select_db($db)) }
-
     method insert-id(--> uint64)
         is native(LIBMYSQL) is symbol('mysql_insert_id') {}
 
-    method mysql_real_query(Blob, uint64 --> int32)
-        is native(LIBMYSQL) {}
-
-    multi method query(Blob:D $buf)
-    {
-        $.check($.mysql_real_query($buf, $buf.bytes))
-    }
-
-    multi method query(Str:D $str)
-    {
-        $.query($str.encode)
-    }
+    method query(Str --> int32)
+        is native(LIBMYSQL) is symbol('mysql_query') {}
 
     method store-result(--> MYSQL_RES)
         is native(LIBMYSQL) is symbol('mysql_store_result') {}
+
+    method use-result(--> MYSQL_RES)
+        is native(LIBMYSQL) is symbol('mysql_use_result') {}
 
     method affected-rows(--> uint64)
         is native(LIBMYSQL) is symbol('mysql_affected_rows') {}
