@@ -20,7 +20,6 @@ class DB::MySQL does DB
         my $conn = $!lock.protect: { DB::MySQL::Native.init }
 
         $conn.option(MYSQL_READ_DEFAULT_GROUP, $_) with $!group;
-
         $conn.option(MYSQL_OPT_CONNECT_TIMEOUT, $_) with $!connect-timeout;
 
         $conn.connect($!host, $!user, $!password, $!database, $!port,
