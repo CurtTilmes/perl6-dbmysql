@@ -12,7 +12,6 @@ role DB::MySQL::Result does DB::Result
     method free() { .free with $!result; $!result = Nil }
 
     method names() { do for ^$!num-fields { $!fields[$_].name } }
-
 }
 
 class DB::MySQL::NonStatementResult does DB::MySQL::Result
