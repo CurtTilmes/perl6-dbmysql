@@ -7,10 +7,10 @@ plan 5;
 
 isa-ok my $m = DB::MySQL.new(), DB::MySQL, 'Create object';
 
-lives-ok { $m.execute('create table foo(x int, y varchar(20))') },
+lives-ok { $m.execute('create table foo(x int, y int)') },
     'create table';
 
-await do for ^10 -> $x
+await do for ^50 -> $x
 {
     start
     {
@@ -25,7 +25,7 @@ await do for ^10 -> $x
     }
 }
 
-is $m.query('select count(*) from foo').value, 10000, 'all rows present';
+is $m.query('select count(*) from foo').value, 50000, 'all rows present';
 
 lives-ok { $m.execute('drop table foo') }, 'drop table';
 

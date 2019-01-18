@@ -8,8 +8,6 @@ role DB::MySQL::Result does DB::Result
     has $.num-fields = $!result.num-fields;
     has $.fields = $!result.fetch-fields;
 
-    method free() { .free with $!result; $!result = Nil }
-
     method names() { do for ^$!num-fields { $!fields[$_].name } }
 }
 
@@ -18,6 +16,12 @@ class DB::MySQL::NonStatementResult does DB::MySQL::Result
     has $.db is required;
 
     method finish() { $.free; .finish with $!db }  # free db instead of sth
+
+    method free()
+    {
+        .free with $!result;
+        $!result = Nil
+    }
 
     method row()
     {
@@ -39,6 +43,7 @@ class DB::MySQL::StatementResult does DB::MySQL::Result
 
     method free()
     {
+        while $.row {}                           # Exhaust unread results
         .free with $!result-bind;
         .free with $!result;
         $!result-bind = Nil;
