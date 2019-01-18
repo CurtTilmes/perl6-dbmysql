@@ -9,7 +9,7 @@ class DB::MySQL::Connection does DB::Connection
                  server-version proto-info ssl-cipher select-db stat
                  info check insert-id>;
 
-    method ping(--> Bool) { $!conn.ping == 0 }
+    method ping(--> Bool) { $!conn && $!conn.ping == 0 }
 
     method free(--> Nil)
     {

@@ -38,8 +38,14 @@ class DB::MySQL::Statement does DB::Statement
 
         $!stmt.check if $!stmt.execute || ($store && $!stmt.store-result);
 
-        my $result = $!stmt.result-metadata // return $!stmt.affected-rows;
+        if my $result = $!stmt.result-metadata
+        {
+            return DB::MySQL::StatementResult.new(sth => self, :$!stmt,
+                                                  :$result, :$finish)
+        }
 
-        DB::MySQL::StatementResult.new(sth => self, :$!stmt, :$result, :$finish)
+        my $ret = return $!stmt.affected-rows;
+        $!db.finish if $finish;
+        return $ret;
     }
 }
