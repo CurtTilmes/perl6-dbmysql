@@ -1,7 +1,10 @@
 use JSON::Fast;
 use NativeCall;
+use NativeLibs;
 
-my constant LIBMYSQL = 'mysqlclient';
+constant LIBMYSQL = NativeLibs::Searcher.at-runtime(
+    Rakudo::Internals.IS-WIN ?? 'mysql' !! 'mysqlclient',
+    'mysql_init', 16..20);
 
 sub mysql_get_client_version(--> uint32) is export is native(LIBMYSQL) {}
 sub mysql_get_client_info(--> Str) is export is native(LIBMYSQL) {}
