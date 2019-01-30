@@ -1,0 +1,24 @@
+services:
+    - mysql
+
+language: perl6
+
+perl6:
+  - latest
+
+sudo: false
+
+env:
+  - ALL_TESTING=1
+
+before_install:
+  - mysql -e "create database perltest" -uroot
+  - mysql -e "create user 'perltest'@'localhost' identified by 'testpass'" -uroot
+  - mysql -e "grant all privileges on perltest.* to 'perltest'@'localhost'" -uroot
+
+install:
+  - rakudobrew build-zef
+  - zef -v install --deps-only .
+  - cp t/.my.cnf ~
+  - prove6 t/*.t6
+  - rm ~/.my.cnf
