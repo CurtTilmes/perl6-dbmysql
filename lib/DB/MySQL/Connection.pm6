@@ -119,6 +119,6 @@ Commits an active database transaction.  Returns the C<DB::MySQL::Connection> ob
 
 Rolls back an active database transaction.  If the database is
 finished with an active transaction, it will be rolled back
-automatically.  Returns the C<DB::MySQL::Database> object.
+automatically.  Returns the C<DB::MySQL::Connection> object.
 
 =end pod
