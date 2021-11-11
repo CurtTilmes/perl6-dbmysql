@@ -422,8 +422,6 @@ class DB::MySQL::Native is repr('CPointer')
 
     multi method option(mysql-option $option, Str:D $arg)
     {
-        #say 'Blob option';
-
         use NativeHelpers::Blob;
         my int32 $o = $option;
 
@@ -434,7 +432,6 @@ class DB::MySQL::Native is repr('CPointer')
 
     multi method option(mysql-option $option, Int:D $i)
     {
-        #say 'CArray option';
         my CArray[uint32] $arg .= new($i);
         my int32          $o    = $option;
         $.check(
