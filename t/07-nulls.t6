@@ -9,6 +9,8 @@ isa-ok my $m = DB::MySQL.new(), DB::MySQL, 'Create object';
 
 # Issue #2
 
+try $m.execute('drop table foo');
+
 lives-ok { $m.execute('CREATE TABLE foo
                        ( bar timestamp NULL default NULL ) engine=InnoDB') },
     'create table';
