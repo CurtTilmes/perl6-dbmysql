@@ -415,28 +415,26 @@ class DB::MySQL::Native is repr('CPointer')
     method init(DB::MySQL::Native:U: --> DB::MySQL::Native)
         is native(LIBMYSQL) is symbol('mysql_init') {}
 
-    multi method mysql_options(int32 $option, Blob $arg --> int32)
+    multi method mysql_options(int32 $option, CArray[uint8] $arg --> int32)
         is native(LIBMYSQL) is symbol('mysql_options') {}
-    multi method mysql_options(int32 $option, Pointer $arg --> int32)
+    multi method mysql_options(int32 $option, CArray[uint32] $arg --> int32)
         is native(LIBMYSQL) is symbol('mysql_options') {}
 
     multi method option(mysql-option $option, Str:D $arg)
     {
-        use NativeHelpers::Blob;
         my int32 $o = $option;
 
         $.check(
-          $.mysql_options( $o, pointer-to($arg.encode) )
+          $.mysql_options( $o, CArray[uint8].new($arg.encode) )
         )
     }
 
     multi method option(mysql-option $option, Int:D $i)
     {
-        my CArray[uint32] $arg .= new($i);
+        (my $arg = CArray[uint32].new)[0] = $i;
+
         my int32          $o    = $option;
-        $.check(
-          $.mysql_options($o, nativecast(Pointer, $arg))
-        )
+        $.check( $.mysql_options($o, $arg) )
     }
 
     method errno(--> int32)
