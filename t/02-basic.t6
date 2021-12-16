@@ -11,6 +11,8 @@ is $mysql.execute('select 42').value, 42, 'Simple query';
 
 is $mysql.query('select ?', 17).value, 17, 'query with placeholder';
 
+try $mysql.execute('drop table foo');
+
 is $mysql.execute('create table foo (x int, y varchar(80))'),
     0, 'Create table';
 

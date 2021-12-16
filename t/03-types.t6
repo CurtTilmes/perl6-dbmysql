@@ -7,6 +7,8 @@ plan 6;
 
 isa-ok my $m = DB::MySQL.new(), DB::MySQL, 'Create object';
 
+try $m.execute('drop table foo');
+
 is $m.execute(q:to/END/), 0, 'create table';
 create table foo
 (
