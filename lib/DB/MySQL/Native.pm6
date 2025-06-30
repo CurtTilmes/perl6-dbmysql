@@ -317,7 +317,10 @@ class MYSQL_STMT is repr('CPointer')
         is native(LIBMYSQL) is symbol('mysql_stmt_execute') {}
 
     method store-result(--> MYSQL_RES)
-        is native(LIBMYSQL) is symbol('mysql_store_result') {}
+        is native(LIBMYSQL) is symbol('mysql_stmt_store_result') {}
+
+    method free-result(--> int32)
+        is native(LIBMYSQL) is symbol('mysql_stmt_free_result') {}
 
     method affected-rows(--> uint64)
         is native(LIBMYSQL) is symbol('mysql_stmt_affected_rows') {}
