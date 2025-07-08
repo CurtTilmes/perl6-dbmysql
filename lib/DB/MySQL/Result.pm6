@@ -43,7 +43,6 @@ class DB::MySQL::StatementResult does DB::MySQL::Result
 
     method free()
     {
-        while $.row {}                           # Exhaust unread results
         .free with $!result-bind;
         .free with $!result;
         $!result-bind = Nil;

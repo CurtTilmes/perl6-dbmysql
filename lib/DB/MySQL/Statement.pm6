@@ -21,11 +21,12 @@ class DB::MySQL::Statement does DB::Statement
     {
         .free with $!params;
         $!params = Nil;
+        .free-result with $!stmt;
         .close with $!stmt;
         $!stmt = Nil;
     }
 
-    method execute(**@args, Bool :$finish, Bool :$store = True)
+    method execute(**@args, Bool :$finish, Bool :$store = True) # $store not used leave for backwards compatibility
     {
         die DB::MySQL::Error.new(message => 'Wrong number of params')
             unless @args.elems == $!param-count;
@@ -36,7 +37,7 @@ class DB::MySQL::Statement does DB::Statement
             $!stmt.check($!stmt.bind-param($!params[0]))
         }
 
-        $!stmt.check if $!stmt.execute || ($store && $!stmt.store-result);
+        $!stmt.check if $!stmt.execute;
 
         if my $result = $!stmt.result-metadata
         {
